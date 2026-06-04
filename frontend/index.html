@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Biblioteca</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+</head>
+<body class="p-4">
+
+  <h2>Biblioteca</h2>
+  <hr>
+
+  <!-- Sección de libros -->
+  <div class="row">
+    <div class="col-md-4">
+      <h5>Agregar libro</h5>
+      <div class="mb-2">
+        <input type="text" id="titulo" class="form-control" placeholder="Título">
+      </div>
+      <div class="mb-2">
+        <input type="text" id="autor" class="form-control" placeholder="Autor">
+      </div>
+      <div class="mb-2">
+        <input type="text" id="isbn" class="form-control" placeholder="ISBN">
+      </div>
+      <div class="mb-2">
+        <input type="number" id="anio" class="form-control" placeholder="Año">
+      </div>
+      <button class="btn btn-primary" onclick="agregarLibro()">Agregar</button>
+      <div id="errorLibro" class="text-danger mt-1"></div>
+    </div>
+
+    <div class="col-md-8">
+      <h5>Catálogo de libros</h5>
+      <div class="mb-2">
+        <input type="text" id="busqueda" class="form-control" placeholder="Buscar por título..." oninput="filtrarLibros()">
+      </div>
+      <table class="table table-bordered table-sm">
+        <thead class="table-dark">
+          <tr>
+            <th>ID</th>
+            <th>Título</th>
+            <th>Autor</th>
+            <th>ISBN</th>
+            <th>Año</th>
+            <th>Disponible</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tablaLibros">
+          <tr><td colspan="7" class="text-center text-muted">Cargando...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- Sección de préstamos -->
+  <div class="row">
+    <div class="col-md-4">
+      <h5>Realizar préstamo</h5>
+      <div class="mb-2">
+        <input type="number" id="prestamoLibroId" class="form-control" placeholder="ID del libro">
+      </div>
+      <div class="mb-2">
+        <input type="text" id="usuarioNombre" class="form-control" placeholder="Nombre del usuario">
+      </div>
+      <button class="btn btn-success" onclick="realizarPrestamo()">Prestar</button>
+      <div id="errorPrestamo" class="text-danger mt-1"></div>
+    </div>
+
+    <div class="col-md-8">
+      <h5>Préstamos activos</h5>
+      <table class="table table-bordered table-sm">
+        <thead class="table-dark">
+          <tr>
+            <th>ID</th>
+            <th>Libro</th>
+            <th>Usuario</th>
+            <th>Fecha</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tablaPrestamos">
+          <tr><td colspan="5" class="text-center text-muted">Cargando...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const API = 'http://localhost:3000'
+    let todosLosLibros = []
+
+    // Carga inicial al abrir la página
+    cargarLibros()
+    cargarPrestamos()
+
+    // Trae todos los libros de la API y los guarda para el filtro local
+    async function cargarLibros() {
+      try {
+        const res = await fetch(`${API}/libros`)
+        todosLosLibros = await res.json()
+        renderizarLibros(todosLosLibros)
+      } catch (e) {
+        document.getElementById('tablaLibros').innerHTML =
+          '<tr><td colspan="7" class="text-danger text-center">No se pudo conectar al servidor</td></tr>'
+      }
+    }
+
+    // Filtra los libros en JS según el texto del input, no llama a la API
+    function filtrarLibros() {
+      const texto = document.getElementById('busqueda').value.toLowerCase()
+      const filtrados = todosLosLibros.filter(l => l.titulo.toLowerCase().includes(texto))
+      renderizarLibros(filtrados)
+    }
+
+    // Pinta la tabla de libros con los datos recibidos
+    function renderizarLibros(libros) {
+      const tbody = document.getElementById('tablaLibros')
+      if (libros.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Sin libros</td></tr>'
+        return
+      }
+      tbody.innerHTML = libros.map(l => `
+        <tr>
+          <td>${l.id}</td>
+          <td>${l.titulo}</td>
+          <td>${l.autor}</td>
+          <td>${l.isbn}</td>
+          <td>${l.anio}</td>
+          <td>${l.disponible ? '<span class="badge bg-success">Sí</span>' : '<span class="badge bg-secondary">No</span>'}</td>
+          <td>
+            <button class="btn btn-danger btn-sm" onclick="eliminarLibro(${l.id})">Eliminar</button>
+          </td>
+        </tr>
+      `).join('')
+    }
+
+    // Envía el formulario de agregar libro a la API
+    async function agregarLibro() {
+      document.getElementById('errorLibro').textContent = ''
+      const body = {
+        titulo: document.getElementById('titulo').value,
+        autor: document.getElementById('autor').value,
+        isbn: document.getElementById('isbn').value,
+        anio: parseInt(document.getElementById('anio').value)
+      }
+      try {
+        const res = await fetch(`${API}/libros`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        })
+        const data = await res.json()
+        if (!res.ok) {
+          document.getElementById('errorLibro').textContent = data.error
+          return
+        }
+        // Limpiar campos y recargar
+        document.getElementById('titulo').value = ''
+        document.getElementById('autor').value = ''
+        document.getElementById('isbn').value = ''
+        document.getElementById('anio').value = ''
+        cargarLibros()
+      } catch (e) {
+        document.getElementById('errorLibro').textContent = 'Error de conexión'
+      }
+    }
+
+    // Borra un libro por id
+    async function eliminarLibro(id) {
+      try {
+        const res = await fetch(`${API}/libros/${id}`, { method: 'DELETE' })
+        const data = await res.json()
+        if (!res.ok) {
+          alert(data.error)
+          return
+        }
+        cargarLibros()
+      } catch (e) {
+        alert('Error de conexión')
+      }
+    }
+
+    // Trae los préstamos activos
+    async function cargarPrestamos() {
+      try {
+        const res = await fetch(`${API}/prestamos`)
+        const prestamos = await res.json()
+        // Mostrar solo los activos en la tabla
+        const activos = prestamos.filter(p => p.activo)
+        const tbody = document.getElementById('tablaPrestamos')
+        if (activos.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Sin préstamos activos</td></tr>'
+          return
+        }
+        tbody.innerHTML = activos.map(p => `
+          <tr>
+            <td>${p.id}</td>
+            <td>${p.tituloLibro}</td>
+            <td>${p.usuarioNombre}</td>
+            <td>${p.fechaPrestamo}</td>
+            <td>
+              <button class="btn btn-warning btn-sm" onclick="devolverLibro(${p.id})">Devolver</button>
+            </td>
+          </tr>
+        `).join('')
+      } catch (e) {
+        document.getElementById('tablaPrestamos').innerHTML =
+          '<tr><td colspan="5" class="text-danger text-center">No se pudo conectar al servidor</td></tr>'
+      }
+    }
+
+    // Crea un préstamo nuevo
+    async function realizarPrestamo() {
+      document.getElementById('errorPrestamo').textContent = ''
+      const body = {
+        libroId: parseInt(document.getElementById('prestamoLibroId').value),
+        usuarioNombre: document.getElementById('usuarioNombre').value
+      }
+      try {
+        const res = await fetch(`${API}/prestamos`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        })
+        const data = await res.json()
+        if (!res.ok) {
+          document.getElementById('errorPrestamo').textContent = data.error
+          return
+        }
+        document.getElementById('prestamoLibroId').value = ''
+        document.getElementById('usuarioNombre').value = ''
+        cargarLibros()
+        cargarPrestamos()
+      } catch (e) {
+        document.getElementById('errorPrestamo').textContent = 'Error de conexión'
+      }
+    }
+
+    // Registra la devolución de un préstamo
+    async function devolverLibro(prestamoId) {
+      try {
+        const res = await fetch(`${API}/prestamos/${prestamoId}/devolver`, { method: 'PUT' })
+        const data = await res.json()
+        if (!res.ok) {
+          alert(data.error)
+          return
+        }
+        cargarLibros()
+        cargarPrestamos()
+      } catch (e) {
+        alert('Error de conexión')
+      }
+    }
+  </script>
+
+</body>
+</html>
