@@ -13,7 +13,7 @@ La relación entre contextos es **Customer/Supplier**: el contexto _Préstamos_ 
 ├── index.js                                      ← DI Root: compone todo el grafo de dependencias
 ├── package.json
 ├── README.md
-└── src/
+└── backend/
     ├── domain/
     │   ├── shared/
     │   │   ├── DomainError.js                    ← error base del dominio
@@ -135,4 +135,4 @@ El servidor levanta en `http://localhost:3000`
 | Use Case | `*UseCase.js` en `application/` |
 | Anti-Corruption Layer | `LibroACL.js` |
 | DI Root / Composition Root | `index.js` |
-| Bounded Context | `domain/catalogo/`, `domain/prestamos/` |
+| Bounded Context | `backend/domain/catalogo/`, `backend/domain/prestamos/` |
