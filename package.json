@@ -1,0 +1,12 @@
+{
+  "name": "biblioteca-layered",
+  "version": "1.0.0",
+  "description": "Sistema de biblioteca - arquitectura en capas",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}
